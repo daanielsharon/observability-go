@@ -3,6 +3,8 @@ package logger
 import (
 	"context"
 	"os"
+	"path/filepath"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -13,36 +15,70 @@ import (
 var logger *zap.Logger
 
 func New(lokiURL string) *zap.Logger {
+	// Pastikan direktori log ada
+	logDir := "/var/log"
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		panic(err)
+	}
+
 	config := zapcore.EncoderConfig{
 		TimeKey:        "ts",
 		LevelKey:       "level",
 		NameKey:        "logger",
 		CallerKey:      "caller",
+		FunctionKey:    "",
 		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
+		LineEnding:     "\n",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeDuration: zapcore.MillisDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	fileEncoder := zapcore.NewJSONEncoder(config)
-	consoleEncoder := zapcore.NewConsoleEncoder(config)
+	logFile := filepath.Join(logDir, "app.log")
 
-	writer := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   "/var/log/app.log",
-		MaxSize:    10,
-		MaxBackups: 3,
-		MaxAge:     7,
-	})
+	// Konfigurasi rotasi log
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    10,    // MB
+		MaxBackups: 3,     // Jumlah file backup
+		MaxAge:     28,    // Hari
+		Compress:   true,  // Kompres file lama
+	}
 
+	// Buat core untuk file dan console
 	core := zapcore.NewTee(
-		zapcore.NewCore(fileEncoder, writer, zap.InfoLevel),
-		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), zap.DebugLevel),
+		// File output dengan format JSON
+		zapcore.NewCore(
+			zapcore.NewJSONEncoder(config),
+			zapcore.AddSync(lumberjackLogger),
+			zap.InfoLevel,
+		),
+		// Console output
+		zapcore.NewCore(
+			zapcore.NewConsoleEncoder(config),
+			zapcore.AddSync(os.Stdout),
+			zap.DebugLevel,
+		),
 	)
 
-	logger = zap.New(core, zap.AddCaller())
+	// Buat logger dengan caller info dan stacktrace
+	logger = zap.New(
+		core,
+		zap.AddCaller(),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
+
+	// Pastikan log disimpan saat aplikasi berhenti
+	zap.ReplaceGlobals(logger)
+
+	// Log startup message
+	logger.Info("Logger initialized", 
+		zap.String("log_file", logFile),
+		zap.Time("startup_time", time.Now().UTC()),
+	)
+
 	return logger
 }
 

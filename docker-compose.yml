@@ -1,5 +1,8 @@
 version: '3.9'
 
+volumes:
+  app_logs:
+
 services:
   app:
     build: ./app
@@ -8,6 +11,8 @@ services:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - LOKI_URL=http://loki:3100/loki/api/v1/push
+    volumes:
+      - app_logs:/var/log
     depends_on:
       - tempo
       - loki
@@ -48,3 +53,12 @@ services:
     # hapus kalau folder provisioning belum ada
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+      - app_logs:/var/log
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki

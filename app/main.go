@@ -4,7 +4,6 @@ import (
 	"context"
 	"observability-go/handler"
 	"observability-go/logger"
-
 	"strconv"
 	"time"
 
@@ -14,12 +13,17 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/gofiber/adaptor/v2"
 )
 
 var (
@@ -45,8 +49,18 @@ func initTracer() func() {
 		zapLogger.Fatal("failed to create exporter", zap.Error(err))
 	}
 
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("my-fiber-service"),
+		),
+	)
+	if err != nil {
+		zapLogger.Fatal("failed to create resource", zap.Error(err))
+	}
+
 	tp := trace.NewTracerProvider(
 		trace.WithBatcher(exp),
+		trace.WithResource(res),
 	)
 	otel.SetTracerProvider(tp)
 
@@ -69,24 +83,25 @@ func main() {
 	app.Use(pprof.New(pprofConfig))
 	app.Use(recover.New())
 
-	// Prometheus middleware
+	// Prometheus middleware to collect metrics
 	app.Use(func(c *fiber.Ctx) error {
 		start := time.Now()
 		err := c.Next()
 
-		route := ""
-		if c.Route() != nil {
-			route = c.Route().Path
-		}
+		route := c.Route().Path
+		statusCode := strconv.Itoa(c.Response().StatusCode())
 
 		requestDuration.WithLabelValues(
 			c.Method(),
 			route,
-			strconv.Itoa(c.Response().StatusCode()),
+			statusCode,
 		).Observe(time.Since(start).Seconds())
 
 		return err
 	})
+
+	// Prometheus metrics endpoint
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	handler.RegisterRoutes(app, zapLogger)
 
