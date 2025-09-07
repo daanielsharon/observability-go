@@ -2,6 +2,7 @@ version: '3.9'
 
 volumes:
   app_logs:
+  tempo-data:
 
 services:
   app:
@@ -23,6 +24,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
     ports:
       - "9090:9090"
 
@@ -31,6 +33,8 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    user: "0:0"
     ports:
       - "3200:3200"
       - "4317:4317"

@@ -8,17 +8,40 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:4317
 
+# Memberlist is required for generator ring even in single-binary setups
+memberlist:
+  join_members:
+    - tempo:7946
+
 ingester:
- trace_idle_period: 10s
- max_block_bytes: 1_000_000
- max_block_duration: 5m
+  trace_idle_period: 10s
+  max_block_bytes: 1_000_000
+  max_block_duration: 5m
+  lifecycler:
+    ring:
+      kvstore:
+        store: memberlist
 
 compactor:
  compaction:
     block_retention: 24h
 
 storage:
- trace:
-    backend: local
-    local:
-      path: /tmp/tempo
+  trace:
+     backend: local
+     local:
+       path: /var/tempo
+
+metrics_generator:
+  ring:
+    kvstore:
+      store: memberlist
+  registry:
+    collection_interval: 5s
+  processor:
+    service_graphs: {}
+    span_metrics: {}
+  storage:
+    path: /var/tempo/generator
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write

@@ -134,7 +134,7 @@
         "pluginVersion": "8.0.0",
         "targets": [
           {
-            "query": "{ .service.name = \"fiber-app\" }",
+            "query": "{ .service.name = \"my-fiber-service\" }",
             "queryType": "traceId",
             "refId": "A"
           }
