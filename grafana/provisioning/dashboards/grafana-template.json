@@ -100,7 +100,7 @@
         "pluginVersion": "8.0.0",
         "targets": [
           {
-            "expr": "{app=\"fiber-app\"} |= ``",
+            "expr": "{job=\"app-logs\"} |= ``",
             "refId": "A"
           }
         ],
