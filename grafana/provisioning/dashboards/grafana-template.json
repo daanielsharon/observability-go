@@ -45,7 +45,7 @@
     "links": [],
     "panels": [
       {
-        "datasource": "DS_PROMETHEUS",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
         "fieldConfig": {
           "defaults": {
             "color": { "mode": "palette-classic" },
@@ -90,7 +90,7 @@
         "type": "stat"
       },
       {
-        "datasource": "DS_LOKI",
+        "datasource": { "type": "loki", "uid": "loki" },
         "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
         "id": 3,
         "options": {
@@ -128,20 +128,22 @@
         "type": "timeseries"
       },
       {
-        "datasource": "DS_TEMPO",
+        "datasource": { "type": "tempo", "uid": "tempo" },
         "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
         "id": 5,
-        "pluginVersion": "8.0.0",
+        "pluginVersion": "11.5.0",
+        "timeFrom": "30m",
         "targets": [
-          {
-            "query": "{ .service.name = \"my-fiber-service\" }",
-            "queryType": "traceId",
-            "refId": "A"
-          }
+           {
+             "queryType": "traceql",
+             "refId": "A",
+             "query": "{ resource.service.name = \"my-fiber-service\" }",
+             "searchRecent": true         
+           }
         ],
         "title": "Recent traces (Tempo)",
         "type": "traces"
-      }
+       }
     ],
     "refresh": "5s",
     "schemaVersion": 27,
