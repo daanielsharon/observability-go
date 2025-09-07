@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: DS_PROMETHEUS
+    type: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+  - name: DS_LOKI
+    type: loki
+    url: http://loki:3100
+    access: proxy
+  - name: DS_TEMPO
+    type: tempo
+    url: http://tempo:3200
+    access: proxy
