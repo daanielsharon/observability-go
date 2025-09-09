@@ -1,160 +1,138 @@
 {
-    "__inputs": [
+  "annotations": {
+    "list": [
       {
-        "name": "DS_PROMETHEUS",
-        "label": "Prometheus",
-        "description": "",
-        "type": "datasource",
-        "pluginId": "prometheus",
-        "pluginName": "Prometheus"
-      },
-      {
-        "name": "DS_LOKI",
-        "label": "Loki",
-        "description": "",
-        "type": "datasource",
-        "pluginId": "loki",
-        "pluginName": "Loki"
-      },
-      {
-        "name": "DS_TEMPO",
-        "label": "Tempo",
-        "description": "",
-        "type": "datasource",
-        "pluginId": "tempo",
-        "pluginName": "Tempo"
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
       }
-    ],
-    "annotations": {
-      "list": [
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate (Fiber)",
+      "type": "timeseries",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisLabel": "", "axisPlacement": "auto" }
+        }
+      },
+      "options": { "tooltip": { "mode": "single" } },
+      "targets": [
         {
-          "builtIn": 1,
-          "datasource": "-- Grafana --",
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "type": "dashboard"
+          "refId": "A",
+          "expr": "rate(http_request_duration_seconds_count{job=\"fiber-app\"}[5m])"
         }
       ]
     },
-    "editable": true,
-    "gnetId": null,
-    "graphTooltip": 0,
-    "id": null,
-    "links": [],
-    "panels": [
-      {
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": { "axisLabel": "", "axisPlacement": "auto" }
+    {
+      "id": 2,
+      "title": "p95 Latency (s)",
+      "type": "stat",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              { "color": "green" },
+              { "color": "red", "value": 0.5 }
+            ]
           }
-        },
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-        "id": 1,
-        "options": {
-          "tooltip": { "mode": "single" }
-        },
-        "pluginVersion": "8.0.0",
-        "targets": [
-          {
-            "expr": "rate(http_request_duration_seconds_count{job=\"fiber-app\"}[5m])",
-            "refId": "A"
-          }
-        ],
-        "title": "Request rate (Fiber)",
-        "type": "timeseries"
+        }
       },
-      {
-        "datasource": "DS_PROMETHEUS",
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "unit": "s",
-            "thresholds": { "steps": [{ "color": "green" }, { "color": "red", "value": 0.5 }] }
-          }
-        },
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-        "id": 2,
-        "options": {},
-        "pluginVersion": "8.0.0",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"fiber-app\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "title": "p95 Latency (s)",
-        "type": "stat"
+      "options": {},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"fiber-app\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Logs (Loki)",
+      "type": "logs",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending"
       },
-      {
-        "datasource": { "type": "loki", "uid": "loki" },
-        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
-        "id": 3,
-        "options": {
-          "showTime": true,
-          "sortOrder": "Descending"
-        },
-        "pluginVersion": "8.0.0",
-        "targets": [
-          {
-            "expr": "{job=\"app-logs\"} |= ``",
-            "refId": "A"
-          }
-        ],
-        "title": "Logs (Loki)",
-        "type": "logs"
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"app-logs\"}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "5xx Error rate",
+      "type": "timeseries",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps"
+        }
       },
-      {
-        "datasource": "DS_PROMETHEUS",
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "unit": "reqps"
-          }
-        },
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-        "id": 4,
-        "options": {},
-        "targets": [
-          {
-            "expr": "rate(http_request_duration_seconds_count{job=\"fiber-app\",status=~\"5..\"}[5m])",
-            "refId": "A"
-          }
-        ],
-        "title": "5xx Error rate",
-        "type": "timeseries"
-      },
-      {
-        "datasource": { "type": "tempo", "uid": "tempo" },
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-        "id": 5,
-        "pluginVersion": "11.5.0",
-        "timeFrom": "30m",
-        "targets": [
-           {
-             "queryType": "traceql",
-             "refId": "A",
-             "query": "{ resource.service.name = \"my-fiber-service\" }",
-             "searchRecent": true         
-           }
-        ],
-        "title": "Recent traces (Tempo)",
-        "type": "traces"
-       }
-    ],
-    "refresh": "5s",
-    "schemaVersion": 27,
-    "style": "dark",
-    "tags": ["observability", "fiber"],
-    "templating": { "list": [] },
-    "time": { "from": "now-15m", "to": "now" },
-    "timepicker": {},
-    "timezone": "",
-    "title": "Fiber-App Observability",
-    "uid": "fiber-obs",
-    "version": 0
-  }
-  
+      "options": {},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_request_duration_seconds_count{job=\"fiber-app\",status=~\"5..\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Recent traces (Tempo)",
+      "type": "traces",
+      "pluginVersion": "11.5.0",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "timeFrom": "30m",
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "search",
+          "searchRecent": true,
+          "query": "{}",
+          "limit": 100
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["observability", "fiber"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Fiber-App Observability",
+  "uid": "fiber-obs",
+  "version": 1
+}
