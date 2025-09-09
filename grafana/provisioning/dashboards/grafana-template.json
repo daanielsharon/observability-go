@@ -107,21 +107,77 @@
     },
     {
       "id": 5,
-      "title": "Recent traces (Tempo)",
-      "type": "traces",
-      "pluginVersion": "11.5.0",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "timeFrom": "30m",
-      "datasource": { "type": "tempo", "uid": "tempo" },
+      "type": "table",
+      "title": "Recent Traces (Tempo)",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "h": 8,
+        "w": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "refId": "A",
-          "queryType": "search",
-          "searchRecent": true,
-          "query": "{}",
-          "limit": 100
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceqlSearch",
+          "limit": 20,
+          "tableType": "traces",
+          "metricsQueryType": "range",
+          "filters": [
+            {
+              "id": "c5c6dd78",
+              "operator": "=",
+              "scope": "span"
+            }
+          ]
         }
-      ]
+      ],
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        }
+      }
     }
   ],
   "refresh": "5s",
