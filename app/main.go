@@ -91,6 +91,7 @@ func main() {
 		route := c.Route().Path
 		statusCode := strconv.Itoa(c.Response().StatusCode())
 
+		// Add status code label to the metrics
 		requestDuration.WithLabelValues(
 			c.Method(),
 			route,
@@ -98,6 +99,11 @@ func main() {
 		).Observe(time.Since(start).Seconds())
 
 		return err
+	})
+
+	// Add a test endpoint to generate 5xx errors
+	app.Get("/error", func(c *fiber.Ctx) error {
+		return c.Status(500).SendString("Internal Server Error")
 	})
 
 	// Prometheus metrics endpoint
