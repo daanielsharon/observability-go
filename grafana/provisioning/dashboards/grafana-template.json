@@ -80,7 +80,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{job=\"app-logs\"}"
+          "expr": "{job=\"my-fiber-service\"}"
         }
       ]
     },
