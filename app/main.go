@@ -88,13 +88,13 @@ func main() {
 		start := time.Now()
 		err := c.Next()
 
-		route := c.Route().Path
+		path := c.Path()
 		statusCode := strconv.Itoa(c.Response().StatusCode())
 
 		// Add status code label to the metrics
 		requestDuration.WithLabelValues(
 			c.Method(),
-			route,
+			path,
 			statusCode,
 		).Observe(time.Since(start).Seconds())
 
