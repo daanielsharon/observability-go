@@ -22,22 +22,25 @@ datasources:
           urlLabel: View trace
 
   - name: DS_TEMPO
-    uid: tempo
     type: tempo
-    url: http://tempo:3200
     access: proxy
+    url: http://tempo:3200
+    uid: tempo
     jsonData:
       httpMethod: GET
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      lokiSearch:
+        datasourceUid: 'loki'
       tracesToLogs:
-        datasourceUid: loki
-        mappedTags:
-          - service.name
-        mapTagNamesEnabled: true
-        filterByTraceID: true
-        filterBySpanID: false
+        datasourceUid: 'loki'
+        # tags: ['job', 'instance', 'pod', 'namespace']
+        # mappedTags: [{ key: 'service.name', value: 'service' }]
         spanStartTimeShift: '1h'
         spanEndTimeShift: '1h'
-        customQuery: true
-        query: '{job="app-logs"} |= "$${__trace.traceID}"'
+        filterByTraceID: true
+        filterBySpanID: false
       serviceMap:
         datasourceUid: prometheus
