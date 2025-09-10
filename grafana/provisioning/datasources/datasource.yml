@@ -38,6 +38,6 @@ datasources:
         datasourceUid: 'loki'
         spanEndTimeShift: '1s'
         filterByTraceID: true
-        filterBySpanID: false
+        filterBySpanID: true
       serviceMap:
         datasourceUid: prometheus
