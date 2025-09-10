@@ -36,8 +36,6 @@ datasources:
         datasourceUid: 'loki'
       tracesToLogs:
         datasourceUid: 'loki'
-        # tags: ['job', 'instance', 'pod', 'namespace']
-        # mappedTags: [{ key: 'service.name', value: 'service' }]
         spanEndTimeShift: '1s'
         filterByTraceID: true
         filterBySpanID: false
