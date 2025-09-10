@@ -38,8 +38,7 @@ datasources:
         datasourceUid: 'loki'
         # tags: ['job', 'instance', 'pod', 'namespace']
         # mappedTags: [{ key: 'service.name', value: 'service' }]
-        spanStartTimeShift: '1h'
-        spanEndTimeShift: '1h'
+        spanEndTimeShift: '1s'
         filterByTraceID: true
         filterBySpanID: false
       serviceMap:
