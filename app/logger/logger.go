@@ -41,10 +41,10 @@ func New(lokiURL string) *zap.Logger {
 	// Konfigurasi rotasi log
 	lumberjackLogger := &lumberjack.Logger{
 		Filename:   logFile,
-		MaxSize:    10,    // MB
-		MaxBackups: 3,     // Jumlah file backup
-		MaxAge:     28,    // Hari
-		Compress:   true,  // Kompres file lama
+		MaxSize:    10,   // MB
+		MaxBackups: 3,    // Jumlah file backup
+		MaxAge:     28,   // Hari
+		Compress:   true, // Kompres file lama
 	}
 
 	// Buat core untuk file dan console
@@ -74,7 +74,7 @@ func New(lokiURL string) *zap.Logger {
 	zap.ReplaceGlobals(logger)
 
 	// Log startup message
-	logger.Info("Logger initialized", 
+	logger.Info("Logger initialized",
 		zap.String("log_file", logFile),
 		zap.Time("startup_time", time.Now().UTC()),
 	)
@@ -82,13 +82,20 @@ func New(lokiURL string) *zap.Logger {
 	return logger
 }
 
-func WithTrace(ctx context.Context) *zap.Logger {
+// WithTrace returns a logger with trace context fields.
+// If spanId is empty, the span_id field will be omitted from the log entry.
+func WithTrace(ctx context.Context, spanId string) *zap.Logger {
 	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		return logger.With(
-			zap.String("trace_id", span.SpanContext().TraceID().String()),
-			zap.String("span_id", span.SpanContext().SpanID().String()),
-		)
+	if !span.SpanContext().IsValid() {
+		return logger
 	}
-	return logger
+
+	fields := make([]zap.Field, 0, 2) // Pre-allocate for 2 fields
+	fields = append(fields, zap.String("trace_id", span.SpanContext().TraceID().String()))
+
+	if spanId != "" {
+		fields = append(fields, zap.String("span_id", spanId))
+	}
+
+	return logger.With(fields...)
 }
