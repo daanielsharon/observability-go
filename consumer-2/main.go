@@ -71,14 +71,14 @@ func main() {
 		zapLogger.Error("Failed to connect to RabbitMQ", zap.Error(err))
 		return
 	}
-	defer conn.Close()
+	// connection will be closed on graceful shutdown
 
 	ch, err := conn.Channel()
 	if err != nil {
 		zapLogger.Error("Failed to open a channel", zap.Error(err))
 		return
 	}
-	defer ch.Close()
+	// channel will be closed on graceful shutdown
 
 	q, err := ch.QueueDeclare(
 		"task_queue_2", // name

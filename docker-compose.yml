@@ -46,26 +46,36 @@ services:
     environment:
       - SERVICE_NAME=consumer-1
       - LOG_FILE=consumer-1.log
+    volumes:
+      - app_logs:/var/log
     depends_on:
-      - rabbitmq
-      - tempo
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
     networks:
       - observability
     deploy:
       replicas: 2
+    restart: unless-stopped
 
   consumer-2:
     build: ./consumer-2
     environment:
       - SERVICE_NAME=consumer-2
       - LOG_FILE=consumer-2.log
+    volumes:
+      - app_logs:/var/log
     depends_on:
-      - rabbitmq
-      - tempo
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
     networks:
       - observability
     deploy:
       replicas: 2
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:management
@@ -75,6 +85,12 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - observability
 
