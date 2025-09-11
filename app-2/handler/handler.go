@@ -17,32 +17,6 @@ import (
 func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 	tracer := otel.Tracer("fiber-handler")
 
-	// Normal hello
-	app.Get("/hello", func(c *fiber.Ctx) error {
-		ctx := c.UserContext()
-		ctx, span := tracer.Start(ctx, "GET /hello")
-		defer span.End()
-		currentSpanId := span.SpanContext().SpanID().String()
-
-		logger.WithTrace(ctx, currentSpanId).Info("handling /hello")
-		simulateSlowFunction(ctx)
-
-		logger.WithTrace(ctx, currentSpanId).Info("hello success")
-		return c.JSON(fiber.Map{"message": "hello"})
-	})
-
-	// Random delay endpoint
-	app.Get("/random-delay", func(c *fiber.Ctx) error {
-		ctx := c.UserContext()
-		ctx, span := tracer.Start(ctx, "GET /random-delay")
-		defer span.End()
-
-		logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("random-delay working")
-
-		delay := simulateRandomDelay(ctx)
-		return c.JSON(fiber.Map{"delay_ms": delay})
-	})
-
 	// Random error endpoint
 	app.Get("/random-error", func(c *fiber.Ctx) error {
 		ctx := c.UserContext()
@@ -63,20 +37,30 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 		return c.JSON(fiber.Map{"message": "success"})
 	})
 
-	// Multi-function call (chained spans)
-	app.Get("/chain", func(c *fiber.Ctx) error {
+	// New endpoint for inter-service communication
+	app.Post("/process", func(c *fiber.Ctx) error {
+		// Extract context from the incoming request
 		ctx := c.UserContext()
-		ctx, span := tracer.Start(ctx, "GET /chain")
+		ctx, span := tracer.Start(ctx, "POST /process")
 		defer span.End()
 		currentSpanId := span.SpanContext().SpanID().String()
 
-		logger.WithTrace(ctx, currentSpanId).Info("chain working")
+		logger.WithTrace(ctx, currentSpanId).Info("Received process request")
 
-		step1(ctx)
-		step2(ctx)
-		step3(ctx)
+		// Simulate some processing
+		simulateRandomDelay(ctx)
 
-		return c.JSON(fiber.Map{"message": "chain done"})
+		// Add some attributes to the span
+		span.SetAttributes(
+			attribute.String("processor", "app-2"),
+			attribute.String("request.id", c.Get("X-Request-ID")),
+		)
+
+		// Return response with trace context
+		return c.JSON(fiber.Map{
+			"status":  "processed",
+			"service": "app-2",
+		})
 	})
 }
 
@@ -114,39 +98,4 @@ func simulateRandomError(ctx context.Context) error {
 		return errors.New("simulated random error")
 	}
 	return nil
-}
-
-// --- Chained functions to see span breakdown ---
-
-func step1(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step1")
-	defer span.End()
-
-	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step1 working")
-	time.Sleep(100 * time.Millisecond)
-	step1Subtask(ctx)
-}
-
-func step1Subtask(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step1Subtask")
-	defer span.End()
-
-	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step1Subtask working")
-	time.Sleep(50 * time.Millisecond)
-}
-
-func step2(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step2")
-	defer span.End()
-
-	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step2 working")
-	time.Sleep(200 * time.Millisecond)
-}
-
-func step3(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step3")
-	defer span.End()
-
-	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step3 working")
-	time.Sleep(150 * time.Millisecond)
 }

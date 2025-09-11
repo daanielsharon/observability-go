@@ -3,9 +3,13 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
+	"net/http"
 	"observability-go/logger"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel"
@@ -77,6 +81,66 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 		step3(ctx)
 
 		return c.JSON(fiber.Map{"message": "chain done"})
+	})
+
+	// New endpoint that calls app-2
+	app.Get("/call-app2", func(c *fiber.Ctx) error {
+		ctx := c.UserContext()
+		ctx, span := tracer.Start(ctx, "GET /call-app2")
+		defer span.End()
+		currentSpanId := span.SpanContext().SpanID().String()
+
+		logger.WithTrace(ctx, currentSpanId).Info("Calling app-2 service")
+
+		// Create HTTP client with OpenTelemetry transport
+		client := &http.Client{
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		}
+
+		// Create request with context
+		req, err := http.NewRequestWithContext(
+			ctx,
+			"POST",
+			"http://app-2:8081/process",
+			nil,
+		)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to create request to app-2")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create request to app-2",
+			})
+		}
+
+		// Add any headers if needed
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", c.Get("X-Request-ID"))
+
+		// Make the request
+		resp, err := client.Do(req)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to call app-2")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": fmt.Sprintf("Failed to call app-2: %v", err),
+			})
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			errMsg := fmt.Sprintf("app-2 returned status: %d", resp.StatusCode)
+			span.RecordError(errors.New(errMsg))
+			span.SetStatus(codes.Error, errMsg)
+			return c.Status(resp.StatusCode).JSON(fiber.Map{
+				"error": errMsg,
+			})
+		}
+
+		logger.WithTrace(ctx, currentSpanId).Info("Successfully called app-2")
+		return c.JSON(fiber.Map{
+			"message": "Successfully called app-2",
+			"status":  "success",
+		})
 	})
 }
 
