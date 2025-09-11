@@ -14,10 +14,9 @@ import (
 
 var logger *zap.Logger
 
-func New(lokiURL string) *zap.Logger {
+func New(lokiURL string, logFilename string) *zap.Logger {
 	// Pastikan direktori log ada
-	logDir := "/var/log"
-	if err := os.MkdirAll(logDir, 0755); err != nil {
+	if err := os.MkdirAll(logFilename, 0755); err != nil {
 		panic(err)
 	}
 
@@ -36,7 +35,7 @@ func New(lokiURL string) *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	logFile := filepath.Join(logDir, "app.log")
+	logFile := filepath.Join("/var/log", logFilename)
 
 	// Konfigurasi rotasi log
 	lumberjackLogger := &lumberjack.Logger{

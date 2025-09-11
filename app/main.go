@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"observability-go/handler"
 	"observability-go/logger"
+	"os"
 	"strconv"
 	"time"
 
@@ -51,7 +53,7 @@ func initTracer() func() {
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("my-fiber-service"),
+			semconv.ServiceNameKey.String(os.Getenv("SERVICE_NAME")),
 		),
 	)
 	if err != nil {
@@ -68,7 +70,7 @@ func initTracer() func() {
 }
 
 func main() {
-	zapLogger = logger.New("loki:3100")
+	zapLogger = logger.New("loki:3100", os.Getenv("LOG_FILE"))
 	cleanup := initTracer()
 	defer cleanup()
 
@@ -111,8 +113,8 @@ func main() {
 
 	handler.RegisterRoutes(app, zapLogger)
 
-	zapLogger.Info("starting server on :8080")
-	if err := app.Listen(":8080"); err != nil {
+	zapLogger.Info(fmt.Sprintf("starting server on :%s", os.Getenv("PORT")))
+	if err := app.Listen(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil {
 		zapLogger.Fatal("server failed", zap.Error(err))
 	}
 }
