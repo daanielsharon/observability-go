@@ -11,7 +11,6 @@ services:
       - "8080:8080"
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
-      - LOKI_URL=http://loki:3100/loki/api/v1/push
       - SERVICE_NAME=service-1
       - PORT=8080
       - LOG_FILE=app.log
@@ -20,6 +19,9 @@ services:
     depends_on:
       - tempo
       - loki
+      - prometheus
+    networks:
+      - observability
 
   app-2:
     build: ./app-2
@@ -27,7 +29,6 @@ services:
       - "8081:8081"
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
-      - LOKI_URL=http://loki:3100/loki/api/v1/push
       - SERVICE_NAME=service-2
       - PORT=8081
       - LOG_FILE=app2.log
@@ -36,6 +37,46 @@ services:
     depends_on:
       - tempo
       - loki
+      - prometheus
+    networks:
+      - observability
+
+  consumer-1:
+    build: ./consumer-1
+    environment:
+      - SERVICE_NAME=consumer-1
+      - LOG_FILE=consumer-1.log
+    depends_on:
+      - rabbitmq
+      - tempo
+    networks:
+      - observability
+    deploy:
+      replicas: 2
+
+  consumer-2:
+    build: ./consumer-2
+    environment:
+      - SERVICE_NAME=consumer-2
+      - LOG_FILE=consumer-2.log
+    depends_on:
+      - rabbitmq
+      - tempo
+    networks:
+      - observability
+    deploy:
+      replicas: 2
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - observability
 
   prometheus:
     image: prom/prometheus
@@ -46,6 +87,8 @@ services:
       - "--web.enable-remote-write-receiver"
     ports:
       - "9090:9090"
+    networks:
+      - observability
 
   tempo:
     image: grafana/tempo:latest
@@ -57,6 +100,8 @@ services:
     ports:
       - "3200:3200"
       - "4317:4317"
+    networks:
+      - observability
 
   loki:
     image: grafana/loki:latest
@@ -64,6 +109,8 @@ services:
       - "3100:3100"
     # kalau nggak punya custom config, cukup gini:
     command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
 
   grafana:
     image: grafana/grafana
@@ -82,6 +129,8 @@ services:
       - prometheus
       - tempo
       - loki
+    networks:
+      - observability
 
   promtail:
     image: grafana/promtail:latest
@@ -95,3 +144,9 @@ services:
       - prometheus
       - tempo
       - loki
+    networks:
+      - observability
+
+networks:
+  observability:
+    driver: bridge
