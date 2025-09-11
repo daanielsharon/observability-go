@@ -15,7 +15,7 @@ import (
 )
 
 func RegisterRoutes(app *fiber.App, log *zap.Logger) {
-	tracer := otel.Tracer("fiber-handler")
+	tracer := otel.Tracer("app-2")
 
 	// Random error endpoint
 	app.Get("/random-error", func(c *fiber.Ctx) error {
@@ -66,18 +66,8 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 
 // --- Simulated Functions ---
 
-func simulateSlowFunction(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateSlowFunction")
-	defer span.End()
-
-	delay := 200
-	span.SetAttributes(attribute.Int("delay_ms", delay))
-	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("simulateSlowFunction working")
-	time.Sleep(time.Duration(delay) * time.Millisecond)
-}
-
 func simulateRandomDelay(ctx context.Context) int {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateRandomDelay")
+	_, span := otel.Tracer("app-2").Start(ctx, "simulateRandomDelay")
 	defer span.End()
 
 	delay := rand.Intn(1000) // 0–1000 ms
@@ -88,7 +78,7 @@ func simulateRandomDelay(ctx context.Context) int {
 }
 
 func simulateRandomError(ctx context.Context) error {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateRandomError")
+	_, span := otel.Tracer("app-2").Start(ctx, "simulateRandomError")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("simulateRandomError working")

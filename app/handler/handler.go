@@ -19,7 +19,7 @@ import (
 )
 
 func RegisterRoutes(app *fiber.App, log *zap.Logger) {
-	tracer := otel.Tracer("fiber-handler")
+	tracer := otel.Tracer("app-1")
 
 	// Normal hello
 	app.Get("/hello", func(c *fiber.Ctx) error {
@@ -147,7 +147,7 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 // --- Simulated Functions ---
 
 func simulateSlowFunction(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateSlowFunction")
+	_, span := otel.Tracer("app-1").Start(ctx, "simulateSlowFunction")
 	defer span.End()
 
 	delay := 200
@@ -157,7 +157,7 @@ func simulateSlowFunction(ctx context.Context) {
 }
 
 func simulateRandomDelay(ctx context.Context) int {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateRandomDelay")
+	_, span := otel.Tracer("app-1").Start(ctx, "simulateRandomDelay")
 	defer span.End()
 
 	delay := rand.Intn(1000) // 0–1000 ms
@@ -168,7 +168,7 @@ func simulateRandomDelay(ctx context.Context) int {
 }
 
 func simulateRandomError(ctx context.Context) error {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "simulateRandomError")
+	_, span := otel.Tracer("app-1").Start(ctx, "simulateRandomError")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("simulateRandomError working")
@@ -183,7 +183,7 @@ func simulateRandomError(ctx context.Context) error {
 // --- Chained functions to see span breakdown ---
 
 func step1(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step1")
+	_, span := otel.Tracer("app-1").Start(ctx, "step1")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step1 working")
@@ -192,7 +192,7 @@ func step1(ctx context.Context) {
 }
 
 func step1Subtask(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step1Subtask")
+	_, span := otel.Tracer("app-1").Start(ctx, "step1Subtask")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step1Subtask working")
@@ -200,7 +200,7 @@ func step1Subtask(ctx context.Context) {
 }
 
 func step2(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step2")
+	_, span := otel.Tracer("app-1").Start(ctx, "step2")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step2 working")
@@ -208,7 +208,7 @@ func step2(ctx context.Context) {
 }
 
 func step3(ctx context.Context) {
-	_, span := otel.Tracer("fiber-handler").Start(ctx, "step3")
+	_, span := otel.Tracer("app-1").Start(ctx, "step3")
 	defer span.End()
 
 	logger.WithTrace(ctx, span.SpanContext().SpanID().String()).Info("step3 working")
