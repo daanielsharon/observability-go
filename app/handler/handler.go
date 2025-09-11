@@ -92,6 +92,8 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 
 		logger.WithTrace(ctx, currentSpanId).Info("Calling app-2 service")
 
+		simulateRandomDelay(ctx)
+
 		// Create HTTP client with OpenTelemetry transport
 		client := &http.Client{
 			Transport: otelhttp.NewTransport(http.DefaultTransport),

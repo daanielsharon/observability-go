@@ -23,3 +23,17 @@ scrape_configs:
     labels:
       job: service-2
       __path__: /var/log/app2.log
+- job_name: consumer-1
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: consumer-1
+      __path__: /var/log/consumer-1.log
+- job_name: consumer-2
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: consumer-2
+      __path__: /var/log/consumer-2.log

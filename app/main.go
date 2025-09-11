@@ -17,14 +17,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/gofiber/adaptor/v2"
 )
@@ -39,17 +38,15 @@ var (
 
 func initTracer() func() {
 	ctx := context.Background()
-	conn, err := grpc.NewClient("tempo:4317",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	// Using HTTP instead of gRPC
+	httpClient := otlptracehttp.NewClient(
+		otlptracehttp.WithEndpoint("tempo:4318"),
+		otlptracehttp.WithInsecure(),
 	)
 
+	exp, err := otlptrace.New(ctx, httpClient)
 	if err != nil {
-		zapLogger.Fatal("failed to connect to Tempo", zap.Error(err))
-	}
-
-	exp, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
-	if err != nil {
-		zapLogger.Fatal("failed to create exporter", zap.Error(err))
+		zapLogger.Fatal("failed to create HTTP exporter", zap.Error(err))
 	}
 
 	res, err := resource.New(ctx,

@@ -104,6 +104,42 @@
     },
     {
       "id": 5,
+      "title": "Consumer-1 Logs",
+      "type": "logs",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"consumer-1\"}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Consumer-2 Logs",
+      "type": "logs",
+      "pluginVersion": "8.0.0",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"consumer-2\"}"
+        }
+      ]
+    },
+    {
+      "id": 7,
       "title": "5xx Error rate",
       "type": "timeseries",
       "pluginVersion": "8.0.0",
@@ -124,7 +160,7 @@
       ]
     },
     {
-      "id": 6,
+      "id": 8,
       "type": "table",
       "title": "Recent Traces (Tempo)",
       "gridPos": {
