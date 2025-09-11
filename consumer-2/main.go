@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,6 +66,50 @@ func initTracer() func() {
 	)
 
 	return func() { _ = tp.Shutdown(ctx) }
+}
+
+// processMessage simulates message processing with multiple steps
+func processMessage(ctx context.Context, log *zap.Logger, body []byte) error {
+	// Start a new span for the processing
+	_, span := otel.Tracer("consumer-2").Start(ctx, "ProcessMessage")
+	defer span.End()
+
+	// Step 1: Parse the message
+	log.Info("Parsing forwarded message")
+	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+
+	// Step 2: Validate the message
+	log.Info("Validating forwarded message")
+	if len(body) == 0 {
+		return fmt.Errorf("empty message body")
+	}
+	time.Sleep(time.Duration(rand.Intn(150)) * time.Millisecond)
+
+	// Simulate random error
+	if rand.Intn(3) == 0 {
+		err := fmt.Errorf("random processing error in consumer-2")
+		span.RecordError(err)
+		log.Error("Random processing error", zap.Error(err))
+		return err
+	}
+
+	// Step 3: Process the message
+	log.Info("Processing forwarded message",
+		zap.Int("message_length", len(body)),
+		zap.String("first_10_bytes", string(body[:min(10, len(body))])),
+	)
+	time.Sleep(time.Duration(rand.Intn(750)) * time.Millisecond)
+
+	log.Info("Forwarded message processed successfully")
+	return nil
+}
+
+// min returns the smaller of x or y
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 // Custom carrier for RabbitMQ headers
@@ -167,15 +213,26 @@ func main() {
 			// Use logger with trace context
 			traceLogger := logger.WithTrace(ctx, currentSpanId)
 			traceLogger.Info("[Consumer 2] Received a forwarded message", zap.String("message", string(d.Body)))
-			time.Sleep(1 * time.Second)
+
+			// Process the message
+			if err := processMessage(ctx, traceLogger, d.Body); err != nil {
+				traceLogger.Error("Failed to process forwarded message", zap.Error(err))
+				d.Nack(false, true)
+				// End the span after processing is complete
+				if span != nil {
+					span.End()
+				}
+
+				continue
+			}
+
+			// Acknowledge the message
+			d.Ack(false)
 
 			// End the span after processing is complete
 			if span != nil {
 				span.End()
 			}
-
-			// Acknowledge the message
-			d.Ack(false)
 		}
 	}()
 

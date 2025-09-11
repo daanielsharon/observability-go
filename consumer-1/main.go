@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -84,6 +86,51 @@ func (c *RabbitMQCarrier) Get(key string) string {
 
 func (c *RabbitMQCarrier) Set(key string, value string) {
 	c.headers[key] = value
+}
+
+// processMessage simulates message processing with multiple steps
+func processMessage(ctx context.Context, log *zap.Logger, body []byte) error {
+	// Start a new span for the processing
+	_, span := otel.Tracer("consumer-1").Start(ctx, "ProcessMessage")
+	defer span.End()
+
+	// Step 1: Parse the message
+	log.Info("Parsing message")
+	// Simulate parsing time
+	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+
+	// Step 2: Validate the message
+	log.Info("Validating message")
+	if len(body) == 0 {
+		return fmt.Errorf("empty message body")
+	}
+	time.Sleep(time.Duration(rand.Intn(150)) * time.Millisecond)
+
+	// Simulate random error
+	if rand.Intn(3) == 0 {
+		err := fmt.Errorf("random processing error in consumer-1")
+		span.RecordError(err)
+		log.Error("Random processing error", zap.Error(err))
+		return err
+	}
+
+	// Step 3: Process the message
+	log.Info("Processing message",
+		zap.Int("message_length", len(body)),
+		zap.String("first_10_bytes", string(body[:min(10, len(body))])),
+	)
+	time.Sleep(time.Duration(rand.Intn(750)) * time.Millisecond)
+
+	log.Info("Message processed successfully")
+	return nil
+}
+
+// min returns the smaller of x or y
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 func (c *RabbitMQCarrier) Keys() []string {
@@ -171,8 +218,16 @@ func main() {
 			traceLogger := logger.WithTrace(ctx, currentSpanId)
 			traceLogger.Info("[Consumer 1] Received a message", zap.String("message", string(d.Body)))
 
-			// Simulate processing
-			time.Sleep(1 * time.Second)
+			// Process the message
+			if err := processMessage(ctx, traceLogger, d.Body); err != nil {
+				traceLogger.Error("Failed to process message", zap.Error(err))
+				d.Nack(false, true)
+				// End the span after processing is complete
+				if span != nil {
+					span.End()
+				}
+				continue
+			}
 
 			// Prepare headers for trace context propagation
 			headers := make(amqp091.Table)
