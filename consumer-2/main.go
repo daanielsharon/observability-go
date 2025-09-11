@@ -11,17 +11,51 @@ import (
 
 	"github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 )
 
 func initTracer() func() {
-	// Initialize a simple tracer provider without exporters
-	tp := trace.NewTracerProvider()
-	otel.SetTracerProvider(tp)
+	// Configure OTLP over HTTP exporter to Tempo
+	ctx := context.Background()
+	httpClient := otlptracehttp.NewClient(
+		otlptracehttp.WithEndpoint("tempo:4318"),
+		otlptracehttp.WithInsecure(),
+	)
 
-	// Set up OpenTelemetry propagation with both TraceContext and Baggage
+	exp, err := otlptrace.New(ctx, httpClient)
+	if err != nil {
+		// fallback to no-op provider if exporter fails to initialize
+		tp := trace.NewTracerProvider()
+		otel.SetTracerProvider(tp)
+		otel.SetTextMapPropagator(
+			propagation.NewCompositeTextMapPropagator(
+				propagation.TraceContext{},
+				propagation.Baggage{},
+			),
+		)
+		return func() { _ = tp.Shutdown(ctx) }
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String(os.Getenv("SERVICE_NAME")),
+		),
+	)
+	if err != nil {
+		res = resource.Empty()
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(
 		propagation.NewCompositeTextMapPropagator(
 			propagation.TraceContext{},
@@ -29,7 +63,7 @@ func initTracer() func() {
 		),
 	)
 
-	return func() { _ = tp.Shutdown(context.Background()) }
+	return func() { _ = tp.Shutdown(ctx) }
 }
 
 // Custom carrier for RabbitMQ headers
