@@ -21,6 +21,22 @@ services:
       - tempo
       - loki
 
+  app-2:
+    build: ./app-2
+    ports:
+      - "8081:8081"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+      - SERVICE_NAME=service-2
+      - PORT=8081
+      - LOG_FILE=app2.log
+    volumes:
+      - app_logs:/var/log
+    depends_on:
+      - tempo
+      - loki
+
   prometheus:
     image: prom/prometheus
     volumes:
@@ -60,6 +76,12 @@ services:
     # hapus kalau folder provisioning belum ada
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - app
+      - app-2
+      - prometheus
+      - tempo
+      - loki
 
   promtail:
     image: grafana/promtail:latest
@@ -68,4 +90,8 @@ services:
       - app_logs:/var/log
     command: -config.file=/etc/promtail/config.yaml
     depends_on:
+      - app
+      - app-2
+      - prometheus
+      - tempo
       - loki
