@@ -39,8 +39,10 @@ func RegisterRoutes(app *fiber.App, log *zap.Logger) {
 
 	// New endpoint for inter-service communication
 	app.Post("/process", func(c *fiber.Ctx) error {
-		// Extract context from the incoming request
+		// Get the context from the request
 		ctx := c.UserContext()
+		
+		// Start a new span for this request
 		ctx, span := tracer.Start(ctx, "POST /process")
 		defer span.End()
 		currentSpanId := span.SpanContext().SpanID().String()

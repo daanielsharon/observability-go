@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -74,8 +75,27 @@ func main() {
 	cleanup := initTracer()
 	defer cleanup()
 
+	// Set up OpenTelemetry propagation
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
 	app := fiber.New()
 	app.Use(requestid.New())
+
+	// Add OpenTelemetry middleware
+	app.Use(func(c *fiber.Ctx) error {
+		// Extract trace context from headers if present
+		propagator := otel.GetTextMapPropagator()
+		carrier := propagation.HeaderCarrier(c.GetReqHeaders())
+
+		// Create a new context with the trace context
+		ctx := propagator.Extract(c.Context(), carrier)
+
+		// Store the context in the request
+		c.SetUserContext(ctx)
+
+		// Continue the chain
+		return c.Next()
+	})
 
 	// Initialize pprof with default options
 	pprofConfig := pprof.Config{
