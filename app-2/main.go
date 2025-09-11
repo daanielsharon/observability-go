@@ -75,8 +75,13 @@ func main() {
 	cleanup := initTracer()
 	defer cleanup()
 
-	// Set up OpenTelemetry propagation
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	// Set up OpenTelemetry propagation with both TraceContext and Baggage
+	otel.SetTextMapPropagator(
+		propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		),
+	)
 
 	app := fiber.New()
 	app.Use(requestid.New())
