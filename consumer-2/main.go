@@ -66,7 +66,7 @@ func main() {
 	zapLogger := logger.New("loki:3100", os.Getenv("LOG_FILE"))
 	defer zapLogger.Sync()
 
-	conn, err := amqp091.Dial("amqp://guest:guest@rabbitmq:5672/")
+	conn, err := amqp091.Dial("amqp://guest:guest@rabbitmq:5672")
 	if err != nil {
 		zapLogger.Error("Failed to connect to RabbitMQ", zap.Error(err))
 		return
