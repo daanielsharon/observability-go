@@ -95,13 +95,14 @@ func main() {
 		start := time.Now()
 		err := c.Next()
 
-		path := c.Path()
+		// Gunakan pattern route, bukan raw path
+		normalizedPath := c.Route().Path
 		statusCode := strconv.Itoa(c.Response().StatusCode())
 
 		// Add status code label to the metrics
 		requestDuration.WithLabelValues(
 			c.Method(),
-			path,
+			normalizedPath,
 			statusCode,
 		).Observe(time.Since(start).Seconds())
 
